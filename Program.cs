@@ -41,37 +41,55 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // ─── Controllers ───
 builder.Services.AddControllers();
+
+// Swagger configuration
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
-// ─── CORS ───
+// ─── CORS (Sowebto bach y-9bel ay blassa) ───
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
 
 // ─── Database Migration & Seeding ───
+// Had l-khit mzyan, ghadi y-creer l'base f SmarterASP b l-idne dyallah
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();
-    DbSeeder.Seed(context);
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();
+        DbSeeder.Seed(context);
+    }
+    catch (Exception ex)
+    {
+        // Ila wa9e3 mouchkil f l-migration, l'app at-kmml bla crash
+        Console.WriteLine("Migration error: " + ex.Message);
+    }
 }
 
 // ─── Middleware Pipeline ───
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 
-app.UseCors("AllowFrontend");
+// FIX: Swagger khdam dima (Development + Production)
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+    options.RoutePrefix = string.Empty; // Bach l-API t-hell nichane f l-URL l-assasya
+});
+
+app.MapOpenApi();
+
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
