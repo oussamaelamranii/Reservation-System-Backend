@@ -25,6 +25,10 @@ public class RegisterDto
     [Required(ErrorMessage = "La confirmation du mot de passe est requise")]
     [Compare("Password", ErrorMessage = "Les mots de passe ne correspondent pas")]
     public string ConfirmPassword { get; set; } = string.Empty;
+
+    /// <summary>starter | standard | intensif | premium</summary>
+    [MaxLength(50)]
+    public string? SubscriptionType { get; set; }
 }
 
 public class LoginDto
@@ -52,6 +56,10 @@ public class UserDto
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string? SubscriptionType { get; set; }
+    public int SessionsPerWeek { get; set; }
+    public string InscriptionDate { get; set; } = string.Empty;
 }
 
 // ─── Session DTOs ───
@@ -145,11 +153,23 @@ public class CreateBookingDto
     public Guid SessionId { get; set; }
 }
 
-// ─── Admin DTO ───
+// ─── Admin DTOs ───
 
 public class AdminStatsDto
 {
     public int TotalSessions { get; set; }
     public int TotalClients { get; set; }
     public int TotalBookings { get; set; }
+    public int PendingClients { get; set; }
+}
+
+public class ApproveUserDto
+{
+    /// <summary>starter | standard | intensif | premium</summary>
+    [Required]
+    public string SubscriptionType { get; set; } = string.Empty;
+
+    [Required]
+    [Range(1, 99)]
+    public int SessionsPerWeek { get; set; }
 }

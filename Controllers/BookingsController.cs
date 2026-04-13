@@ -86,6 +86,33 @@ public class BookingsController : ControllerBase
         if (session.Bookings.Count >= session.Capacity)
             return BadRequest(new { message = "Cette session est complète" });
 
+        // ── Check weekly booking limit ──────────────────────────────────────
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return Unauthorized();
+
+        if (user.SessionsPerWeek > 0) // 0 = unlimited (premium)
+        {
+            // Calculate ISO week boundaries for the target session's date
+            var sessionDate = session.Date.Date;
+            var dayOfWeek = (int)sessionDate.DayOfWeek;
+            var weekStart = sessionDate.AddDays(-(dayOfWeek == 0 ? 6 : dayOfWeek - 1)); // Monday
+            var weekEnd = weekStart.AddDays(7);
+
+            var bookingsThisWeek = await _context.Bookings
+                .Include(b => b.Session)
+                .CountAsync(b =>
+                    b.UserId == userId &&
+                    b.Session.Date >= weekStart &&
+                    b.Session.Date < weekEnd);
+
+            if (bookingsThisWeek >= user.SessionsPerWeek)
+                return BadRequest(new
+                {
+                    message = $"Vous avez atteint votre limite de {user.SessionsPerWeek} séance(s) pour cette semaine selon votre abonnement."
+                });
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         var booking = new Booking
         {
             SessionId = dto.SessionId,

@@ -20,6 +20,9 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.Role).HasDefaultValue("client");
+            entity.Property(u => u.Status).HasDefaultValue("pending");
+            entity.Property(u => u.SessionsPerWeek).HasDefaultValue(0);
+            entity.Property(u => u.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         // Session

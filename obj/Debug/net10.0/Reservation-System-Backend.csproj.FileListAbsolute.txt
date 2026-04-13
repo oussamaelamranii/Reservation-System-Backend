@@ -159,3 +159,6 @@ C:\Users\oelam\OneDrive\Desktop\Reservation-System\Reservation-System-Backend\Re
 C:\Users\oelam\OneDrive\Desktop\Reservation-System\Reservation-System-Backend\Reservation-System-Backend\obj\Debug\net10.0\Reservation-System-Backend.genruntimeconfig.cache
 C:\Users\oelam\OneDrive\Desktop\Reservation-System\Reservation-System-Backend\Reservation-System-Backend\obj\Debug\net10.0\ref\Reservation-System-Backend.dll
 C:\Users\oelam\OneDrive\Desktop\Reservation-System\Reservation-System-Backend\Reservation-System-Backend\obj\Debug\net10.0\Reservation-System-Backend.sourcelink.json
+C:\Users\oelam\OneDrive\Desktop\Reservation-System\Reservation-System-Backend\Reservation-System-Backend\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\Users\oelam\OneDrive\Desktop\Reservation-System\Reservation-System-Backend\Reservation-System-Backend\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Users\oelam\OneDrive\Desktop\Reservation-System\Reservation-System-Backend\Reservation-System-Backend\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll

@@ -11,7 +11,7 @@ namespace Reservation_System_Backend.Services;
 
 public interface IAuthService
 {
-    Task<AuthResponseDto> RegisterAsync(RegisterDto dto);
+    Task<object> RegisterAsync(RegisterDto dto);
     Task<AuthResponseDto> LoginAsync(LoginDto dto);
     Task<UserDto?> GetCurrentUserAsync(Guid userId);
 }
@@ -21,19 +21,32 @@ public class AuthService : IAuthService
     private readonly AppDbContext _context;
     private readonly IConfiguration _configuration;
 
+    // Subscription → sessions per week mapping
+    private static readonly Dictionary<string, int> SessionLimits = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "starter",  2 },
+        { "standard", 3 },
+        { "intensif", 4 },
+        { "premium",  0 } // 0 = unlimited
+    };
+
     public AuthService(AppDbContext context, IConfiguration configuration)
     {
         _context = context;
         _configuration = configuration;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+    /// <summary>
+    /// Register a new client — account is PENDING until admin approves
+    /// </summary>
+    public async Task<object> RegisterAsync(RegisterDto dto)
     {
-        // Check if email already exists
         if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-        {
             throw new InvalidOperationException("Cet email est déjà utilisé");
-        }
+
+        var sessionsPerWeek = dto.SubscriptionType != null && SessionLimits.TryGetValue(dto.SubscriptionType, out var limit)
+            ? limit
+            : 0;
 
         var user = new User
         {
@@ -41,29 +54,35 @@ public class AuthService : IAuthService
             LastName = dto.LastName,
             Email = dto.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Role = "client"
+            Role = "client",
+            Status = "pending",          // ← requires admin approval
+            SubscriptionType = dto.SubscriptionType?.ToLower(),
+            SessionsPerWeek = sessionsPerWeek,
+            CreatedAt = DateTime.UtcNow
         };
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var token = GenerateJwtToken(user);
-
-        return new AuthResponseDto
-        {
-            Token = token,
-            User = MapToDto(user)
-        };
+        // Return a plain message — no JWT token until approved
+        return new { message = "Inscription reçue. Votre compte sera activé après validation par l'administrateur." };
     }
 
+    /// <summary>
+    /// Login — blocked for pending/rejected accounts
+    /// </summary>
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-        {
             throw new UnauthorizedAccessException("Identifiants incorrects");
-        }
+
+        if (user.Status == "pending")
+            throw new UnauthorizedAccessException("Votre compte est en attente de validation par l'administrateur.");
+
+        if (user.Status == "rejected")
+            throw new UnauthorizedAccessException("Votre compte a été refusé. Contactez l'administrateur pour plus d'informations.");
 
         var token = GenerateJwtToken(user);
 
@@ -106,12 +125,16 @@ public class AuthService : IAuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private static UserDto MapToDto(User user) => new()
+    internal static UserDto MapToDto(User user) => new()
     {
         Id = user.Id,
         FirstName = user.FirstName,
         LastName = user.LastName,
         Email = user.Email,
-        Role = user.Role
+        Role = user.Role,
+        Status = user.Status,
+        SubscriptionType = user.SubscriptionType,
+        SessionsPerWeek = user.SessionsPerWeek,
+        InscriptionDate = user.CreatedAt.ToString("o")
     };
 }

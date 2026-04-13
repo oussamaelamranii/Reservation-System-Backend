@@ -18,10 +18,10 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Register a new client account
+    /// Register a new client account — returns a pending confirmation message (no token)
     /// </summary>
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto dto)
+    public async Task<ActionResult<object>> Register([FromBody] RegisterDto dto)
     {
         try
         {
@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Login with email and password
+    /// Login with email and password — blocked if account is pending or rejected
     /// </summary>
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)

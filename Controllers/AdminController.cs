@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Reservation_System_Backend.Data;
 using Reservation_System_Backend.DTOs;
+using Reservation_System_Backend.Services;
 
 namespace Reservation_System_Backend.Controllers;
 
@@ -18,41 +19,87 @@ public class AdminController : ControllerBase
         _context = context;
     }
 
-    /// <summary>
-    /// Get dashboard statistics
-    /// </summary>
+    /// <summary>Get dashboard statistics</summary>
     [HttpGet("stats")]
     public async Task<ActionResult<AdminStatsDto>> GetStats()
     {
         var stats = new AdminStatsDto
         {
-            TotalSessions = await _context.Sessions.CountAsync(),
-            TotalClients = await _context.Users.CountAsync(u => u.Role == "client"),
-            TotalBookings = await _context.Bookings.CountAsync()
+            TotalSessions  = await _context.Sessions.CountAsync(),
+            TotalClients   = await _context.Users.CountAsync(u => u.Role == "client" && u.Status == "approved"),
+            TotalBookings  = await _context.Bookings.CountAsync(),
+            PendingClients = await _context.Users.CountAsync(u => u.Status == "pending")
         };
 
         return Ok(stats);
     }
 
-    /// <summary>
-    /// Get all registered users
-    /// </summary>
+    /// <summary>Get all users (clients + admins)</summary>
     [HttpGet("users")]
     public async Task<ActionResult<List<UserDto>>> GetUsers()
     {
         var users = await _context.Users
-            .OrderBy(u => u.LastName)
+            .OrderBy(u => u.Status)   // pending first
+            .ThenBy(u => u.LastName)
             .ThenBy(u => u.FirstName)
             .Select(u => new UserDto
             {
-                Id = u.Id,
-                FirstName = u.FirstName,
-                LastName = u.LastName,
-                Email = u.Email,
-                Role = u.Role
+                Id               = u.Id,
+                FirstName        = u.FirstName,
+                LastName         = u.LastName,
+                Email            = u.Email,
+                Role             = u.Role,
+                Status           = u.Status,
+                SubscriptionType = u.SubscriptionType,
+                SessionsPerWeek  = u.SessionsPerWeek,
+                InscriptionDate  = u.CreatedAt.ToString("o")
             })
             .ToListAsync();
 
         return Ok(users);
+    }
+
+    /// <summary>Approve a pending client — set their subscription details</summary>
+    [HttpPost("users/{id:guid}/approve")]
+    public async Task<ActionResult<UserDto>> ApproveUser(Guid id, [FromBody] ApproveUserDto dto)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+            return NotFound(new { message = "Utilisateur non trouvé" });
+
+        user.Status           = "approved";
+        user.SubscriptionType = dto.SubscriptionType.ToLower();
+        user.SessionsPerWeek  = dto.SessionsPerWeek;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(AuthService.MapToDto(user));
+    }
+
+    /// <summary>Reject a pending client</summary>
+    [HttpPost("users/{id:guid}/reject")]
+    public async Task<ActionResult<UserDto>> RejectUser(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+            return NotFound(new { message = "Utilisateur non trouvé" });
+
+        user.Status = "rejected";
+        await _context.SaveChangesAsync();
+
+        return Ok(AuthService.MapToDto(user));
+    }
+
+    /// <summary>Delete a user entirely</summary>
+    [HttpDelete("users/{id:guid}")]
+    public async Task<ActionResult> DeleteUser(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+            return NotFound(new { message = "Utilisateur non trouvé" });
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 }
