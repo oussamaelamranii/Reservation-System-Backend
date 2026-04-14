@@ -32,6 +32,10 @@ public class User
     /// <summary>Max sessions allowed per week (0 = unlimited)</summary>
     public int SessionsPerWeek { get; set; } = 0;
 
+    public DateTime? SubscriptionExpiresAt { get; set; }
+    
+    public bool RenewalRequested { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation

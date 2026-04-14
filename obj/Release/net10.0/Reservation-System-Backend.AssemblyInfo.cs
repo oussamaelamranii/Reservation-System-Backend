@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Reservation-System-Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5fa671c7c5b286b469cf9a7c139895b25cce99f8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2c58c391212bfafbef091383bdc70c7d3c17a4cf")]
 [assembly: System.Reflection.AssemblyProductAttribute("Reservation-System-Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Reservation-System-Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

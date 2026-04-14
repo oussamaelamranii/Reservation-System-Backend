@@ -14,6 +14,7 @@ public interface IAuthService
     Task<object> RegisterAsync(RegisterDto dto);
     Task<AuthResponseDto> LoginAsync(LoginDto dto);
     Task<UserDto?> GetCurrentUserAsync(Guid userId);
+    Task RequestRenewalAsync(Guid userId);
 }
 
 public class AuthService : IAuthService
@@ -84,6 +85,12 @@ public class AuthService : IAuthService
         if (user.Status == "rejected")
             throw new UnauthorizedAccessException("Votre compte a été refusé. Contactez l'administrateur pour plus d'informations.");
 
+        // Check subscription expiry (1-month rule)
+        if (user.Role == "client" && user.SubscriptionExpiresAt.HasValue && user.SubscriptionExpiresAt.Value < DateTime.UtcNow)
+        {
+            throw new UnauthorizedAccessException("SUBSCRIPTION_EXPIRED: Votre abonnement est terminé. Veuillez demander une réactivation.");
+        }
+
         var token = GenerateJwtToken(user);
 
         return new AuthResponseDto
@@ -97,6 +104,15 @@ public class AuthService : IAuthService
     {
         var user = await _context.Users.FindAsync(userId);
         return user == null ? null : MapToDto(user);
+    }
+
+    public async Task RequestRenewalAsync(Guid userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return;
+
+        user.RenewalRequested = true;
+        await _context.SaveChangesAsync();
     }
 
     private string GenerateJwtToken(User user)
@@ -135,6 +151,8 @@ public class AuthService : IAuthService
         Status = user.Status,
         SubscriptionType = user.SubscriptionType,
         SessionsPerWeek = user.SessionsPerWeek,
-        InscriptionDate = user.CreatedAt.ToString("o")
+        InscriptionDate = user.CreatedAt.ToString("o"),
+        SubscriptionExpiresAt = user.SubscriptionExpiresAt?.ToString("o"),
+        RenewalRequested = user.RenewalRequested
     };
 }

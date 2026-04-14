@@ -75,6 +75,22 @@ public class BookingsController : ControllerBase
         if (session == null)
             return NotFound(new { message = "Session non trouvée" });
 
+        // ── Validation: No booking for past sessions ───────────────────────
+        var sessionStartTime = session.Date.Add(TimeSpan.Parse(session.StartTime));
+        if (sessionStartTime < DateTime.UtcNow)
+            return BadRequest(new { message = "Vous ne pouvez pas réserver une session passée" });
+
+        // ── Validation: 48h booking window (can't book too early) ───────────
+        // Booking opens 48h before session start
+        if (sessionStartTime.AddHours(-48) > DateTime.UtcNow)
+        {
+            var opensAt = sessionStartTime.AddHours(-48);
+            return BadRequest(new { 
+                message = $"Les réservations pour cette session n'ouvrent que 48h avant le début (le {opensAt:dd/MM à HH:mm})" 
+            });
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         // Check if already booked
         var existingBooking = await _context.Bookings
             .FirstOrDefaultAsync(b => b.SessionId == dto.SessionId && b.UserId == userId);
@@ -161,6 +177,14 @@ public class BookingsController : ControllerBase
 
         if (booking == null)
             return NotFound(new { message = "Réservation non trouvée" });
+
+        // ── Validation: No cancellation for past sessions ───────────────────
+        await _context.Entry(booking).Reference(b => b.Session).LoadAsync();
+        var sessionStartTime = booking.Session.Date.Add(TimeSpan.Parse(booking.Session.StartTime));
+        
+        if (sessionStartTime < DateTime.UtcNow)
+            return BadRequest(new { message = "Vous ne pouvez pas annuler une réservation pour une session déjà passée" });
+        // ────────────────────────────────────────────────────────────────────
 
         // Only the owner or admin can cancel
         var role = User.FindFirstValue(ClaimTypes.Role);

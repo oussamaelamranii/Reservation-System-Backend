@@ -60,6 +60,8 @@ public class UserDto
     public string? SubscriptionType { get; set; }
     public int SessionsPerWeek { get; set; }
     public string InscriptionDate { get; set; } = string.Empty;
+    public string? SubscriptionExpiresAt { get; set; } // ISO string
+    public bool RenewalRequested { get; set; }
 }
 
 // ─── Session DTOs ───

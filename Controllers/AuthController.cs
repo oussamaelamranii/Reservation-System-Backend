@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Reservation_System_Backend.Data;
 using Reservation_System_Backend.DTOs;
 using Reservation_System_Backend.Services;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 namespace Reservation_System_Backend.Controllers;
@@ -11,10 +14,12 @@ namespace Reservation_System_Backend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly AppDbContext _context;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, AppDbContext context)
     {
         _authService = authService;
+        _context = context;
     }
 
     /// <summary>
@@ -66,4 +71,24 @@ public class AuthController : ControllerBase
 
         return Ok(user);
     }
+
+    /// <summary>
+    /// Request reactivation for an expired subscription (public — user is logged out)
+    /// </summary>
+    [HttpPost("request-renewal")]
+    public async Task<ActionResult> RequestRenewal([FromBody] RequestRenewalDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        if (user == null)
+            return NotFound(new { message = "Utilisateur non trouvé" });
+
+        await _authService.RequestRenewalAsync(user.Id);
+        return Ok(new { message = "Demande de réactivation envoyée avec succès" });
+    }
+}
+
+public class RequestRenewalDto
+{
+    [Required]
+    public string Email { get; set; } = string.Empty;
 }

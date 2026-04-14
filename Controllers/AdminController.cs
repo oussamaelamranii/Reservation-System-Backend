@@ -70,6 +70,7 @@ public class AdminController : ControllerBase
         user.Status           = "approved";
         user.SubscriptionType = dto.SubscriptionType.ToLower();
         user.SessionsPerWeek  = dto.SessionsPerWeek;
+        user.SubscriptionExpiresAt = DateTime.UtcNow.AddMonths(1);
 
         await _context.SaveChangesAsync();
 
@@ -101,5 +102,53 @@ public class AdminController : ControllerBase
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+
+    /// <summary>Get all users who requested an abonnement renewal</summary>
+    [HttpGet("renewals")]
+    public async Task<ActionResult<List<UserDto>>> GetRenewals()
+    {
+        var users = await _context.Users
+            .Where(u => u.RenewalRequested)
+            .OrderByDescending(u => u.SubscriptionExpiresAt)
+            .Select(u => AuthService.MapToDto(u))
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
+    /// <summary>Approve a renewal request — extend by 1 month</summary>
+    [HttpPost("users/{id:guid}/approve-renewal")]
+    public async Task<ActionResult<UserDto>> ApproveRenewal(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+            return NotFound(new { message = "Utilisateur non trouvé" });
+
+        user.RenewalRequested = false;
+        // Extend from today or from current expiry (whichever is later)
+        var baseDate = (user.SubscriptionExpiresAt.HasValue && user.SubscriptionExpiresAt.Value > DateTime.UtcNow)
+            ? user.SubscriptionExpiresAt.Value
+            : DateTime.UtcNow;
+            
+        user.SubscriptionExpiresAt = baseDate.AddMonths(1);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(AuthService.MapToDto(user));
+    }
+
+    /// <summary>Reject a renewal request — clear the flag, leave user as-is (expired)</summary>
+    [HttpPost("users/{id:guid}/reject-renewal")]
+    public async Task<ActionResult<UserDto>> RejectRenewal(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+            return NotFound(new { message = "Utilisateur non trouvé" });
+
+        user.RenewalRequested = false;
+        await _context.SaveChangesAsync();
+
+        return Ok(AuthService.MapToDto(user));
     }
 }
