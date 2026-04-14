@@ -122,6 +122,42 @@ public class SessionsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Get all users who booked a specific session (Admin only)
+    /// </summary>
+    [HttpGet("{id:guid}/bookings")]
+    [Authorize(Roles = "admin")]
+    public async Task<ActionResult> GetSessionBookings(Guid id)
+    {
+        var session = await _context.Sessions
+            .Include(s => s.Bookings)
+            .ThenInclude(b => b.User)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (session == null)
+            return NotFound(new { message = "Session non trouvée" });
+
+        var users = session.Bookings.Select(b => new
+        {
+            BookingId = b.Id,
+            CreatedAt = b.CreatedAt.ToString("o"),
+            User = new UserDto
+            {
+                Id = b.User.Id,
+                FirstName = b.User.FirstName,
+                LastName = b.User.LastName,
+                Email = b.User.Email,
+                Role = b.User.Role,
+                Status = b.User.Status,
+                SubscriptionType = b.User.SubscriptionType,
+                SessionsPerWeek = b.User.SessionsPerWeek,
+                InscriptionDate = b.User.CreatedAt.ToString("o")
+            }
+        }).ToList();
+
+        return Ok(users);
+    }
+
     private static SessionDto MapToDto(Session s) => new()
     {
         Id = s.Id,
