@@ -147,6 +147,7 @@ public class SessionsController : ControllerBase
                 FirstName = b.User.FirstName,
                 LastName = b.User.LastName,
                 Email = b.User.Email,
+                PhoneNumber = b.User.PhoneNumber,
                 Role = b.User.Role,
                 Status = b.User.Status,
                 SubscriptionType = b.User.SubscriptionType,

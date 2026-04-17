@@ -54,6 +54,7 @@ public class AuthService : IAuthService
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             Email = dto.Email,
+            PhoneNumber = dto.PhoneNumber,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Role = "client",
             Status = "pending",          // ← requires admin approval
@@ -147,6 +148,7 @@ public class AuthService : IAuthService
         FirstName = user.FirstName,
         LastName = user.LastName,
         Email = user.Email,
+        PhoneNumber = user.PhoneNumber,
         Role = user.Role,
         Status = user.Status,
         SubscriptionType = user.SubscriptionType,

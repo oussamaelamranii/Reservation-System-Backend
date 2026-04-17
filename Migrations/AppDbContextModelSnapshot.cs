@@ -126,6 +126,10 @@ namespace Reservation_System_Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<bool>("RenewalRequested")
                         .HasColumnType("bit");
 

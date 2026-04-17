@@ -18,6 +18,10 @@ public class RegisterDto
     [EmailAddress(ErrorMessage = "Format d'email invalide")]
     public string Email { get; set; } = string.Empty;
 
+    [Required(ErrorMessage = "Le numéro de téléphone est requis")]
+    [Phone(ErrorMessage = "Format de numéro invalide")]
+    public string PhoneNumber { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "Le mot de passe est requis")]
     [MinLength(4, ErrorMessage = "Le mot de passe doit contenir au moins 4 caractères")]
     public string Password { get; set; } = string.Empty;
@@ -55,6 +59,7 @@ public class UserDto
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
     public string Role { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string? SubscriptionType { get; set; }
